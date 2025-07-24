@@ -1,0 +1,10 @@
+<h2>Welcome, {{ user }}</h2>
+<h3>Challenges</h3>
+<ul>
+  {% for id, challenge in challenges.items() %}
+    <li>
+      <a href="/challenge/{{ id }}">{{ challenge.title }}</a> ({{ challenge.category }}) - {{ challenge.points }} pts
+    </li>
+  {% endfor %}
+</ul>
+<a href="/scoreboard">View Scoreboard</a> | <a href="/logout">Logout</a>

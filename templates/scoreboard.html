@@ -1,0 +1,7 @@
+<h2>Scoreboard</h2>
+<ol>
+  {% for user, score in scores %}
+    <li>{{ user }} - {{ score }} pts</li>
+  {% endfor %}
+</ol>
+<a href="/dashboard">Back to Dashboard</a>

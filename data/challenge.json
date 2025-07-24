@@ -1,0 +1,18 @@
+{
+  "web1": {
+    "id": "web1",
+    "title": "Login Bypass",
+    "category": "Web",
+    "points": 100,
+    "description": "Can you bypass this login system?",
+    "flag": "flag{bypass_login}"
+  },
+  "crypto1": {
+    "id": "crypto1",
+    "title": "Simple Caesar",
+    "category": "Crypto",
+    "points": 100,
+    "description": "Decrypt this: lqir{fdhvdub_flskhu}",
+    "flag": "flag{caesary_cipher}"
+  }
+}
