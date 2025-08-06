@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# Database
+instance/
+*.db
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Excel/Export files
+*.xlsx
+
+# IDE files
+.vscode/
+.idea/

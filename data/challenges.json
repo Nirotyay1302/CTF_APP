@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "title": "Basic Web Challenge",
+    "description": "Find the flag hidden in the HTML comments.",
+    "flag": "CTF{web_flag_123}"
+  },
+  {
+    "id": 2,
+    "title": "Decode Me",
+    "description": "This text looks strange: 'SGVsbG8gQ1RGLg=='",
+    "flag": "CTF{base64_decoded}"
+  }
+]

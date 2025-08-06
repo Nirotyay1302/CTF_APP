@@ -1,7 +1,242 @@
-<h2>Scoreboard</h2>
-<ol>
-  {% for user, score in scores %}
-    <li>{{ user }} - {{ score }} pts</li>
-  {% endfor %}
-</ol>
-<a href="/dashboard">Back to Dashboard</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTF Scoreboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('{{ url_for("static", filename="cyber_bg1.jpg") }}') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            padding: 0 0 24px 0;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 10px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 10px; }
+        .header p { font-size: 1.1rem; opacity: 0.9; }
+        .scoreboard-container { padding: 30px 10px; }
+        .navigation { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 10px; }
+        .nav-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-block;
+            font-size: 1rem;
+        }
+        .nav-button:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            color: #ffd700;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-top: 18px; margin-bottom: 36px;
+        }
+        .stat-card {
+            background: white;
+            padding: 18px 8px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .stat-number { font-size: 1.5rem; font-weight: 700; color: #667eea; margin-bottom: 5px; }
+        .stat-label { color: #6c757d; font-size: 0.95rem; }
+        .scoreboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1.5px solid #e0e7ef;
+            margin-top: 18px;
+        }
+        .scoreboard-table th, .scoreboard-table td {
+            padding: 16px 8px;
+            font-size: 1rem;
+        }
+        .scoreboard-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+        .scoreboard-table td { border-bottom: 1px solid #eee; }
+        .scoreboard-table tr:hover { background-color: #f8f9fa; transition: all 0.3s ease; }
+        .scoreboard-table tr.current-user { background: #e0e7ff !important; font-weight: 700; }
+        .scoreboard-table tr.top1 td.rank { color: #ffd700; }
+        .scoreboard-table tr.top2 td.rank { color: #c0c0c0; }
+        .scoreboard-table tr.top3 td.rank { color: #cd7f32; }
+        .rank, .solves, .score, .scoreboard-table th:nth-child(3), .scoreboard-table th:nth-child(4), .scoreboard-table th:nth-child(5), .scoreboard-table td:last-child { text-align: center; }
+        .username { font-weight: 600; color: #333; }
+        .score { font-weight: 700; color: #28a745; }
+        .solves { color: #6c757d; }
+        .medals { display: flex; justify-content: center; gap: 5px; }
+        .medal { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 0.9rem; }
+        .gold { background: linear-gradient(45deg, #ffd700, #ffed4e); }
+        .silver { background: linear-gradient(45deg, #c0c0c0, #e5e5e5); }
+        .bronze { background: linear-gradient(45deg, #cd7f32, #daa520); }
+        .empty-state { text-align: center; padding: 60px 20px; color: #6c757d; }
+        .empty-state h3 { font-size: 1.5rem; margin-bottom: 10px; }
+        .footer { text-align: center; color: #6c757d; font-size: 0.98rem; margin-top: 30px; padding: 18px 0 0 0; }
+        @media (max-width: 900px) {
+            .container { max-width: 98vw; }
+            .scoreboard-container { padding: 18px 2vw; }
+        }
+        @media (max-width: 600px) {
+            .header h1 { font-size: 1.3rem; }
+            .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .scoreboard-table th, .scoreboard-table td { padding: 10px 4px; font-size: 0.95rem; }
+            .scoreboard-table { display: block; overflow-x: auto; white-space: nowrap; }
+            .container { padding: 0 0 10px 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏆 CTF Scoreboard</h1>
+            <p>Track your progress and compete with other players</p>
+        </div>
+        <div class="scoreboard-container">
+            <div class="navigation">
+                <a href="/dashboard" class="nav-button" aria-label="Back to Dashboard">← Back to Dashboard</a>
+                <div>
+                    <span style="color: #6c757d; font-weight: 600;">Last updated: <span id="last-updated"></span></span>
+                </div>
+            </div>
+            <!-- Statistics Cards -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number">{{ total_players }}</div>
+                    <div class="stat-label">Total Players</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ total_challenges }}</div>
+                    <div class="stat-label">Total Challenges</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ total_solves }}</div>
+                    <div class="stat-label">Total Solves</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ highest_score }}</div>
+                    <div class="stat-label">Highest Score</div>
+                </div>
+            </div>
+            {% if results %}
+            <table class="scoreboard-table">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Rank</th>
+                        <th>Player</th>
+                        <th style="text-align: center;">Solves</th>
+                        <th style="text-align: center;">Score</th>
+                        <th style="text-align: center;">Medals</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    {% set rank = loop.index %}
+                    {% set username = result[0] %}
+                    {% set solve_count = result[1] %}
+                    {% set score = result[2] %}
+                    <tr class="{% if session.username == username %}current-user{% endif %} {% if rank == 1 %}top1{% elif rank == 2 %}top2{% elif rank == 3 %}top3{% endif %}">
+                        <td class="rank">
+                            {% if rank == 1 %}🥇{% elif rank == 2 %}🥈{% elif rank == 3 %}🥉{% else %}{{ rank }}{% endif %}
+                        </td>
+                        <td class="username">
+                            {% if session.username == username %}<strong>{{ username }} (You)</strong>{% else %}{{ username }}{% endif %}
+                        </td>
+                        <td class="solves">{{ solve_count }}</td>
+                        <td class="score">{{ score }} pts</td>
+                        <td>
+                            <div class="medals">
+                                {% if rank == 1 %}<div class="medal gold">🥇</div>{% elif rank == 2 %}<div class="medal silver">🥈</div>{% elif rank == 3 %}<div class="medal bronze">🥉</div>{% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <h3>No players yet</h3>
+                <p>Be the first to solve challenges and appear on the scoreboard!</p>
+                <a href="/dashboard" class="nav-button" style="margin-top: 20px;">Start Solving</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <footer class="footer">
+        <p>© 2025 CTF Hunt | All Rights Reserved.</p>
+    </footer>
+    <!-- Auto-refresh script -->
+    <script>
+        // Set last updated timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            const options = {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            document.getElementById('last-updated').textContent = now.toLocaleDateString('en-US', options);
+        }
+        // Update timestamp on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            updateTimestamp();
+            // Add smooth animations
+            const rows = document.querySelectorAll('.scoreboard-table tbody tr');
+            rows.forEach((row, index) => {
+                row.style.animationDelay = `${index * 0.1}s`;
+                row.style.animation = 'fadeInUp 0.6s ease forwards';
+            });
+        });
+        // Auto-refresh every 30 seconds
+        setTimeout(function () {
+            location.reload();
+        }, 30000);
+        // Add CSS animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

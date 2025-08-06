@@ -1,10 +1,85 @@
-<h2>Welcome, {{ user }}</h2>
-<h3>Challenges</h3>
-<ul>
-  {% for id, challenge in challenges.items() %}
-    <li>
-      <a href="/challenge/{{ id }}">{{ challenge.title }}</a> ({{ challenge.category }}) - {{ challenge.points }} pts
-    </li>
-  {% endfor %}
-</ul>
-<a href="/scoreboard">View Scoreboard</a> | <a href="/logout">Logout</a>
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cyber Hunt Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Top Buttons -->
+  <div class="top-right-buttons">
+    <a href="/scoreboard" class="btn-link" aria-label="View Scoreboard">📊 View Scoreboard</a>
+    <a href="/logout" class="btn-link logout" aria-label="Logout">🚪 Logout</a>
+  </div>
+  <span style="color: #6c757d; font-weight: 600;">Last updated: {{ last_updated }}</span>
+
+  <!-- Grid Layout -->
+  <div class="main-wrapper">
+    <!-- Side Image / Mascot -->
+    <div class="image-side">
+      <img src="{{ url_for('static', filename='ui4.jpg') }}" alt="CTF Character" />
+    </div>
+
+    <!-- Main Content -->
+    <div class="dashboard-content">
+      <header class="dashboard-header">
+        <img src="{{ url_for('static', filename='top1.jpg') }}" alt="CTF Banner" class="dashboard-banner" />
+        <h1>Welcome, <span class="highlight">{{ session.username }}</span></h1>
+        <p class="sub-heading">🚩 Capture The Flag Challenges</p>
+        <div class="mt-2">
+          <span style="font-size: 18px; font-weight: 600; color: #28a745;">Your Total Score: {{ user_score }}</span>
+          <button type="button" class="btn-link" style="margin-left: 20px; background: #007bff; color: white; border-radius: 8px; font-size: 15px; padding: 8px 18px;" onclick="document.getElementById('scoreModal').style.display='block'" aria-label="Check Your Total Score">Check Your Total Score</button>
+        </div>
+      </header>
+      <!-- Modal for total score -->
+      <div id="scoreModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:1000;">
+        <div class="modal-content" style="background:white; padding:30px; border-radius:8px; max-width:350px; margin:100px auto; text-align:center; position:relative;">
+          <h2>Your Total Score</h2>
+          <p style="font-size: 22px; color: #28a745; font-weight: bold;">{{ user_score }}</p>
+          <button type="button" class="btn-link logout" style="margin-top: 15px; background: #dc3545; color: white; border-radius: 8px;" onclick="document.getElementById('scoreModal').style.display='none'" aria-label="Close">Close</button>
+        </div>
+      </div>
+
+      <h2 class="section-title">🧪 Available Challenges</h2>
+      {% if challenges %}
+        {% for challenge in challenges %}
+        <div class="challenge-item">
+          <h2>🕵️ {{ challenge.title }}</h2>
+          <p>{{ challenge.description }}</p>
+          <p><strong>Points:</strong> {{ challenge.points }}</p>
+          {% if challenge.id in solved_ids %}
+            <p class="solved">✅ Solved!</p>
+          {% else %}
+            <form method="POST" action="{{ url_for('submit_flag', challenge_id=challenge.id) }}" class="flag-form">
+              <input type="text" name="flag" placeholder="Enter flag here..." required aria-label="Flag input" />
+              <button type="submit" class="btn-link" style="background: #007bff; color: white; border-radius: 8px;">Submit Flag</button>
+              <a href="{{ url_for('show_answer', challenge_id=challenge.id) }}" class="show-answer-btn" aria-label="Show Answer">Show Answer</a>
+            </form>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <p>No challenges available yet.</p>
+      {% endif %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    </div>
+  </div>
+  
+  <footer class="footer">
+    <p>© 2025 CTF Hunt | All Rights Reserved.</p>
+  </footer>
+</body>
+</html>

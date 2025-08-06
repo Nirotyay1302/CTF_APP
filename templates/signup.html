@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='signup.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="main-container">
+    <div class="left-section"></div>
+    <div class="right-section">
+      <h2>Sign Up</h2>
+      <form action="/signup" method="POST">
+        <div class="input-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" placeholder="Enter your username" required aria-label="Username" />
+        </div>
+        <div class="input-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="Enter your email" required aria-label="Email" />
+        </div>
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="Enter your password" required aria-label="Password" />
+        </div>
+        <div class="input-group">
+          <label for="confirm_password">Confirm Password</label>
+          <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm your password" required aria-label="Confirm Password" />
+        </div>
+        <button type="submit" class="btn-link" aria-label="Sign Up">Sign Up</button>
+      </form>
+      <div class="links">
+        <p>Already have an account? <a href="/login">Login Now</a></p>
+        <a href="#" class="terms-link">Terms and Services</a>
+      </div>
+    </div>
+  </div>
+  <!-- SweetAlert2 for flashed messages -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Password validation script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const password = document.getElementById('password');
+      const confirmPassword = document.getElementById('confirm_password');
+      const form = document.querySelector('form');
+      function validatePassword() {
+        if (password.value.length < 6) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Password too short',
+            text: 'Password must be at least 6 characters long',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+          });
+          return false;
+        }
+        if (password.value !== confirmPassword.value) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Passwords do not match',
+            text: 'Please make sure both passwords are identical',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+          });
+          return false;
+        }
+        return true;
+      }
+      form.addEventListener('submit', function(e) {
+        if (!validatePassword()) {
+          e.preventDefault();
+        }
+      });
+      // Real-time password matching indicator
+      confirmPassword.addEventListener('input', function() {
+        if (password.value && confirmPassword.value) {
+          if (password.value === confirmPassword.value) {
+            confirmPassword.style.borderColor = '#4CAF50';
+            confirmPassword.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.3)';
+          } else {
+            confirmPassword.style.borderColor = '#f44336';
+            confirmPassword.style.boxShadow = '0 0 10px rgba(244, 67, 54, 0.3)';
+          }
+        } else {
+          confirmPassword.style.borderColor = '';
+          confirmPassword.style.boxShadow = '';
+        }
+      });
+    });
+  </script>
+  <!-- Flash messages data -->
+  <div id="flash-messages" style="display: none;" 
+       data-messages='{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}[{% for category, message in messages %}{"category": "{{ category }}", "message": "{{ message }}"}{% if not loop.last %},{% endif %}{% endfor %}]{% else %}[]{% endif %}{% endwith %}'>
+  </div>
+  <script>
+    // Display flash messages
+    const flashData = document.getElementById('flash-messages').dataset.messages;
+    if (flashData && flashData !== '[]') {
+      try {
+        const messages = JSON.parse(flashData);
+        messages.forEach(msg => {
+          Swal.fire({
+            icon: msg.category,
+            title: msg.message,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+          });
+        });
+      } catch (e) {
+        console.error('Error parsing flash messages:', e);
+      }
+    }
+  </script>
+</body>
+</html>

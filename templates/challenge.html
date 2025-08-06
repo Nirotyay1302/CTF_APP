@@ -1,8 +1,25 @@
-<h2>{{ challenge.title }}</h2>
-<p>{{ challenge.description }}</p>
-<form method="post">
-  <input name="flag" placeholder="Enter flag">
-  <button type="submit">Submit</button>
-</form>
-<p>{{ message }}</p>
-<a href="/dashboard">Back to Dashboard</a>
+<!-- templates/challenge.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ challenge.title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h2>{{ challenge.title }}</h2>
+    <p>{{ challenge.description }}</p>
+    <form method="post">
+      <label for="flag">Flag</label>
+      <input name="flag" id="flag" placeholder="Enter flag" required>
+      <button type="submit">Submit</button>
+    </form>
+    {% if message %}
+      <p class="message">{{ message }}</p>
+    {% endif %}
+    <a class="button" href="/dashboard">Back to Dashboard</a>
+  </div>
+</body>
+</html>
