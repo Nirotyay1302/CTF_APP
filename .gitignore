@@ -1,26 +1,25 @@
-# Python
+.env
+instance/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Virtual environment
-venv/
-ENV/
-env/
-.venv/
-
-# Database
-instance/
-*.db
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Excel/Export files
-*.xlsx
-
-# IDE files
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
 .vscode/
 .idea/
+.DS_Store
+*.xlsx
