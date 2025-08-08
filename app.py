@@ -8,11 +8,14 @@ from sqlalchemy import text
 from flask_mail import Mail, Message
 from dotenv import load_dotenv
 from models import db, User, Challenge, Solve, AuditLog, Submission
+import threading
 
 load_dotenv()  # Load .env file
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY") or "supersecretkey"
+
+# Enforce MySQL configuration only (per provided details)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://ctfuser:ctfpass123@localhost/ctfdb'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -32,10 +35,48 @@ db.init_app(app)
 FERNET_KEY = b'DmxJF_crcWtbJwZw-cbz5LHKdr8oK8GwhociJmmL8ho='
 fernet = Fernet(FERNET_KEY)
 
+def trigger_export_async():
+    """Kick off Excel export in the background; log errors without interrupting user flow."""
+    try:
+        from export_to_excel import export_all_to_excel
+        threading.Thread(target=export_all_to_excel, daemon=True).start()
+    except Exception as e:
+        print(f"[EXPORT ERROR] Failed to start export thread: {e}")
+
+def get_admin_email():
+    """Return admin notification email from env or first admin user."""
+    admin_email_env = os.getenv("ADMIN_EMAIL")
+    if admin_email_env:
+        return admin_email_env
+    try:
+        admin_user = User.query.filter_by(role='admin').first()
+        if admin_user and admin_user.email:
+            return admin_user.email
+    except Exception:
+        pass
+    return None
+
+def notify_admin(subject: str, body: str) -> None:
+    """Send a notification email to the admin address if available."""
+    admin_email = get_admin_email()
+    if not admin_email:
+        print(f"[ADMIN NOTIFY] No admin email configured. Subject: {subject}")
+        return
+    send_email(admin_email, subject, body)
+
 def send_email(to_email, subject, body):
     try:
         msg = Message(subject, recipients=[to_email])
         msg.body = body
+        # Mark emails as high priority
+        try:
+            msg.extra_headers = {
+                'X-Priority': '1',
+                'X-MSMail-Priority': 'High',
+                'Importance': 'High',
+            }
+        except Exception:
+            pass
         mail.send(msg)
         print(f"[EMAIL SENT] To: {to_email} | Subject: {subject}")
     except Exception as e:
@@ -71,6 +112,11 @@ def signup():
         new_user = User(username=username, email=email, password_hash=hashed_password)
         db.session.add(new_user)
         db.session.commit()  # <-- ADD THIS LINE
+        trigger_export_async()
+        notify_admin(
+            "New user signup",
+            f"User '{new_user.username}' ({new_user.email}) has signed up."
+        )
         send_email(new_user.email, "🎉 Welcome to the CTF Game!",
            f"Hello {new_user.username},\n\nYou're successfully signed up! Let's start solving challenges and capture the flags! 💥")
         return redirect(url_for('login'))
@@ -135,6 +181,14 @@ def submit_flag(challenge_id):
         flash("Admins cannot submit flags.", "error")
         return redirect(url_for('admin_panel'))
     challenge = Challenge.query.get(challenge_id)
+    if not challenge:
+        flash('Challenge not found.', 'danger')
+        return redirect(url_for('dashboard'))
+    # Prevent double scoring for already-solved challenges
+    already_solved = db.session.query(Solve.id).filter_by(user_id=user.id, challenge_id=challenge.id).first()
+    if already_solved:
+        flash('You have already solved this challenge. No additional points awarded.', 'info')
+        return redirect(url_for('dashboard'))
     submitted_flag = request.form.get('flag')
     try:
         correct_flag = fernet.decrypt(challenge.flag_encrypted).decode()
@@ -144,13 +198,24 @@ def submit_flag(challenge_id):
             user.score += challenge.points
             db.session.add(Solve(user_id=user.id, challenge_id=challenge.id))
             flash(f'✅ Correct! You earned {challenge.points} points.', 'success')
+            try:
+                send_email(
+                    user.email,
+                    "✅ Challenge Solved!",
+                    f"Great job {user.username}! You solved '{challenge.title}' and earned {challenge.points} points. Your new score is {user.score}."
+                )
+            except Exception:
+                pass
+            notify_admin(
+                "Challenge solved",
+                f"User '{user.username}' solved '{challenge.title}' for {challenge.points} points. New score: {user.score}."
+            )
         else:
             submission.correct = False
             flash('❌ Incorrect flag. Try again or click "Show Answer".', 'danger')
         db.session.add(submission)
         db.session.commit()
-        from export_to_excel import export_all_to_excel
-        export_all_to_excel()
+        trigger_export_async()
     except Exception as e:
         db.session.rollback()
         flash(f'An error occurred: {e}', 'danger')
@@ -170,12 +235,23 @@ def submit_flag(challenge_id):
 
 @app.route('/show_answer/<int:challenge_id>')
 def show_answer(challenge_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    # Admins should not play
+    if session.get('role') == 'admin':
+        flash("Admins cannot view answers.", "error")
+        return redirect(url_for('admin_panel'))
     challenge = Challenge.query.get(challenge_id)
+    if not challenge:
+        flash('Challenge not found.', 'danger')
+        return redirect(url_for('dashboard'))
     answer = fernet.decrypt(challenge.flag_encrypted).decode()
     return render_template('show_answer.html', challenge=challenge, answer=answer)
 
 @app.route('/scoreboard')
 def scoreboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
     # Count only non-admin users for total players
     total_players = User.query.filter(User.role != 'admin').count()
     total_challenges = Challenge.query.count()
@@ -239,6 +315,11 @@ def admin_panel():
         challenge = Challenge(title=title, description=description, flag_encrypted=encrypted_flag, points=points)
         db.session.add(challenge)
         db.session.commit()
+        trigger_export_async()
+        notify_admin(
+            "Challenge added",
+            f"New challenge added by admin: '{title}' ({points} points)."
+        )
         flash("Challenge added successfully.", "success")
     challenges = Challenge.query.all()
     users = User.query.all()
@@ -251,21 +332,31 @@ def delete_challenge(challenge_id):
         return redirect(url_for('login'))
     try:
         challenge = Challenge.query.get_or_404(challenge_id)
-        
-        # Delete related records first to avoid foreign key constraint errors
-        # Delete solves for this challenge
-        solves_to_delete = Solve.query.filter_by(challenge_id=challenge_id).all()
-        for solve in solves_to_delete:
-            db.session.delete(solve)
-        
-        # Delete submissions for this challenge
-        submissions_to_delete = Submission.query.filter_by(challenge_id=challenge_id).all()
-        for submission in submissions_to_delete:
-            db.session.delete(submission)
-        
-        # Now delete the challenge
+
+        # Adjust user scores for those who solved this challenge (use grouped count to avoid loading all rows)
+        solve_counts = (
+            db.session.query(Solve.user_id, func.count(Solve.id))
+            .filter(Solve.challenge_id == challenge_id)
+            .group_by(Solve.user_id)
+            .all()
+        )
+        for user_id, count in solve_counts:
+            user = User.query.get(user_id)
+            if user:
+                user.score = max(0, user.score - (challenge.points * int(count)))
+
+        # Delete child rows first using bulk deletes to satisfy FK constraints
+        Submission.query.filter(Submission.challenge_id == challenge_id).delete(synchronize_session=False)
+        Solve.query.filter(Solve.challenge_id == challenge_id).delete(synchronize_session=False)
+
+        # Now delete the challenge itself
         db.session.delete(challenge)
         db.session.commit()
+        trigger_export_async()
+        notify_admin(
+            "Challenge deleted",
+            f"Challenge deleted by admin: '{challenge.title}' (id={challenge_id}). User scores adjusted accordingly."
+        )
         flash("Challenge deleted successfully.", "success")
     except Exception as e:
         db.session.rollback()
@@ -277,13 +368,32 @@ def delete_user(user_id):
     if 'user_id' not in session or session.get('role') != 'admin':
         flash("Unauthorized access", "error")
         return redirect(url_for('login'))
-    user = User.query.get_or_404(user_id)
-    if user.role == 'admin':
-        flash("Cannot delete admin user.", "error")
-        return redirect(url_for('admin_panel'))
-    db.session.delete(user)
-    db.session.commit()
-    flash("User deleted successfully.", "success")
+    try:
+        user = User.query.get_or_404(user_id)
+        if user.role == 'admin':
+            flash("Cannot delete admin user.", "error")
+            return redirect(url_for('admin_panel'))
+
+        # Delete dependent records to satisfy foreign key constraints
+        user_solves = Solve.query.filter_by(user_id=user.id).all()
+        for solve in user_solves:
+            db.session.delete(solve)
+
+        user_submissions = Submission.query.filter_by(user_id=user.id).all()
+        for submission in user_submissions:
+            db.session.delete(submission)
+
+        db.session.delete(user)
+        db.session.commit()
+        trigger_export_async()
+        notify_admin(
+            "User deleted",
+            f"Admin deleted user '{user.username}' (id={user.id})."
+        )
+        flash("User deleted successfully.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting user: {str(e)}", "error")
     return redirect(url_for('admin_panel'))
 
 @app.route('/admin/edit/<int:challenge_id>', methods=['POST'])
@@ -303,6 +413,11 @@ def edit_challenge(challenge_id):
             challenge.flag_encrypted = fernet.encrypt(new_flag.encode())
         
         db.session.commit()
+        trigger_export_async()
+        notify_admin(
+            "Challenge updated",
+            f"Challenge updated by admin: '{challenge.title}' (id={challenge.id})."
+        )
         flash("Challenge updated successfully.", "success")
     except Exception as e:
         db.session.rollback()
@@ -321,4 +436,7 @@ def get_challenge_flag(challenge_id):
         return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == "__main__":
+    # Ensure tables exist in the configured MySQL database
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)

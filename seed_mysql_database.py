@@ -20,8 +20,8 @@ def create_admin_user():
         # Create admin user
         admin = User(
             username='admin',
-            email='admin@ctf.local',
-            password_hash=generate_password_hash('admin123'),
+            email='mukherjeetojo4@gmail.com',
+            password_hash=generate_password_hash('TOJO123'),
             role='admin'
         )
         db.session.add(admin)
@@ -120,7 +120,8 @@ def seed_database():
     # Print admin credentials
     print("\n🔑 Admin Login Credentials:")
     print("Username: admin")
-    print("Password: admin123")
+    print("Password: TOJO123")
+    print("Email: mukherjeetojo4@gmail.com")
 
 if __name__ == "__main__":
     with app.app_context():

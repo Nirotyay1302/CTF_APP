@@ -27,7 +27,7 @@ def test_scoreboard():
         # Login first
         login_data = {
             "username": "admin",
-            "password": "admin123"
+            "password": "TOJO123"
         }
         
         session = requests.Session()

@@ -13,17 +13,15 @@ body {
 
 /* Glassmorphism Main Content */
 .main-wrapper {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 40px;
-  padding: 60px 40px;
+  display: block;
+  padding: 24px 16px;
   min-height: 100vh;
   background: rgba(17, 24, 39, 0.5);
-  border-radius: 32px;
+  border-radius: 16px;
   box-shadow: 0 12px 48px rgba(0,0,0,0.4);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  margin: 40px 2vw 30px 2vw;
+  margin: 16px 2vw 16px 2vw;
 }
 
 /* Top Buttons */
@@ -69,28 +67,14 @@ body {
   box-shadow: 0 0 16px #ef4444, 0 0 6px rgba(255, 80, 80, 0.3);
 }
 
-/* Side Image */
-.image-side img {
-  width: 100%;
-  max-width: 500px;
-  max-width: 100vw;
-  height: auto;
-  border-radius: 24px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-  border: 2px solid #334155;
-  transition: transform 0.3s cubic-bezier(.4,2,.3,1);
-  object-fit: contain;
-}
-.image-side img:hover {
-  transform: scale(1.03) rotate(-2deg);
-}
+/* Removed side image */
 
 /* Dashboard Content */
 .dashboard-content {
-  padding: 10px 0;
+  padding: 16px 12px;
   text-align: center;
   background: rgba(30, 41, 59, 0.7);
-  border-radius: 24px;
+  border-radius: 16px;
   box-shadow: 0 6px 24px rgba(0,0,0,0.18);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -107,8 +91,8 @@ body {
   max-width: 100vw;
   max-height: 180px;
   object-fit: contain;
-  border-radius: 14px;
-  margin-bottom: 20px;
+  border-radius: 12px;
+  margin-bottom: 16px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
@@ -326,14 +310,9 @@ h1 {
 /* Responsive */
 @media (max-width: 1024px) {
   .main-wrapper {
-    grid-template-columns: 1fr;
-    padding: 40px 8px;
+    padding: 16px 8px;
     text-align: center;
-    margin: 20px 0 10px 0;
-  }
-  .image-side img {
-    margin: 0 auto;
-    max-width: 300px;
+    margin: 10px 0 10px 0;
   }
   .challenge-item {
     text-align: center;
@@ -342,18 +321,18 @@ h1 {
 }
 @media (max-width: 600px) {
   .main-wrapper {
-    padding: 10px 0;
+    padding: 8px 0;
     margin: 0;
   }
   .dashboard-content {
-    padding: 4px 0;
+    padding: 8px 4px;
     border-radius: 0;
   }
   .footer {
     border-radius: 0;
     margin: 0;
   }
-  .image-side img, .dashboard-banner {
+  .dashboard-banner {
     max-width: 98vw;
     height: auto;
     object-fit: contain;

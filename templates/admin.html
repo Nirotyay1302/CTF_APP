@@ -169,6 +169,17 @@
 </head>
 <body>
     <div class="container" style="max-width: 1200px;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div style="margin-bottom:12px;">
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" style="padding:10px 14px;border-radius:8px;margin:6px 0;">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
         <div class="nav-links" style="margin-bottom: 18px;">
             <a class="button" href="{{ url_for('scoreboard') }}">Scoreboard</a>
             <a class="button" href="{{ url_for('logout') }}" style="background: #ef4444; color: white;">Logout</a>

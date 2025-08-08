@@ -32,16 +32,16 @@ def create_admin_user():
     if not admin_user:
         admin_user = User(
             username='admin',
-            email='admin@ctf.local',
-            password_hash=generate_password_hash('admin123'),
+            email='mukherjeetojo4@gmail.com',
+            password_hash=generate_password_hash('TOJO123'),
             role='admin'
         )
         db.session.add(admin_user)
         db.session.commit()
         print("✅ Created admin user:")
         print("   Username: admin")
-        print("   Password: admin123")
-        print("   Email: admin@ctf.local")
+        print("   Password: TOJO123")
+        print("   Email: mukherjeetojo4@gmail.com")
     else:
         print("ℹ️  Admin user already exists")
 
