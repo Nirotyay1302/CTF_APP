@@ -255,7 +255,13 @@ def scoreboard():
     # Count only non-admin users for total players
     total_players = User.query.filter(User.role != 'admin').count()
     total_challenges = Challenge.query.count()
-    total_solves = Solve.query.count()
+    # Count solves for non-admin users only to avoid including admin activity
+    total_solves = (
+        db.session.query(func.count(Solve.id))
+        .join(User, Solve.user_id == User.id)
+        .filter(User.role != 'admin')
+        .scalar()
+    ) or 0
     highest_score = db.session.query(func.sum(Challenge.points)).scalar() or 0
 
     # Get only non-admin users and their solve/score info
