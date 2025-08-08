@@ -13,10 +13,18 @@ import threading
 load_dotenv()  # Load .env file
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY") or "supersecretkey"
+app.secret_key = os.environ.get("SECRET_KEY") or "change_me_in_env"
 
-# Enforce MySQL configuration only (per provided details)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://ctfuser:ctfpass123@localhost/ctfdb'
+# Database configuration: use provided MySQL details by default; env can override
+database_url = os.getenv('DATABASE_URL')
+if database_url:
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    mysql_user = os.getenv('MYSQL_USER', 'ctfuser')
+    mysql_password = os.getenv('MYSQL_PASSWORD', 'ctfpass123')
+    mysql_host = os.getenv('MYSQL_HOST', 'localhost')
+    mysql_db = os.getenv('MYSQL_DB', 'ctfdb')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{mysql_user}:{mysql_password}@{mysql_host}/{mysql_db}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Configure Flask-Mail
@@ -32,8 +40,20 @@ mail = Mail(app)
 # Initialize database with app
 db.init_app(app)
 
-FERNET_KEY = b'DmxJF_crcWtbJwZw-cbz5LHKdr8oK8GwhociJmmL8ho='
-fernet = Fernet(FERNET_KEY)
+FERNET_KEY = os.getenv('FERNET_KEY')
+if not FERNET_KEY:
+    # Use persistent local key file for dev; avoids committing secrets
+    os.makedirs(app.instance_path, exist_ok=True)
+    key_path = os.path.join(app.instance_path, 'fernet.key')
+    if os.path.exists(key_path):
+        with open(key_path, 'rb') as fh:
+            FERNET_KEY = fh.read().strip()
+    else:
+        generated = Fernet.generate_key()
+        with open(key_path, 'wb') as fh:
+            fh.write(generated)
+        FERNET_KEY = generated
+fernet = Fernet(FERNET_KEY.encode() if isinstance(FERNET_KEY, str) else FERNET_KEY)
 
 def trigger_export_async():
     """Kick off Excel export in the background; log errors without interrupting user flow."""
@@ -442,7 +462,8 @@ def get_challenge_flag(challenge_id):
         return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == "__main__":
-    # Ensure tables exist in the configured MySQL database
+    # Ensure tables exist in the configured database
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    debug_flag = os.getenv("FLASK_DEBUG", "0").lower() in ("1", "true", "yes")
+    app.run(debug=debug_flag)
