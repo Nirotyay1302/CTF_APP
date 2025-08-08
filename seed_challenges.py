@@ -3,7 +3,7 @@
 Seed Challenges Script for CTF Application
 """
 
-from app import db, Challenge, fernet, app
+from CTF_GAME import db, Challenge, fernet, app
 from cryptography.fernet import Fernet
 
 FERNET_KEY = b'DmxJF_crcWtbJwZw-cbz5LHKdr8oK8GwhociJmmL8ho='
@@ -24,7 +24,7 @@ def add_challenge(title, description, flag, points):
 
 def create_admin_user():
     """Create an admin user for managing challenges"""
-    from app import User
+    from CTF_GAME import User
     from werkzeug.security import generate_password_hash
     
     # Check if admin user already exists

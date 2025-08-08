@@ -7,7 +7,7 @@ Actions:
 - Seed a curated list of new, unique challenges (skip if title exists)
 """
 
-from app import app, db, Challenge, Solve, Submission, User, fernet
+from CTF_GAME import app, db, Challenge, Solve, Submission, User, fernet
 from sqlalchemy import func
 
 

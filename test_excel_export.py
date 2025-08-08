@@ -4,7 +4,7 @@ Test Excel Export Functionality
 Creates sample data and exports to Excel for testing
 """
 
-from app import app, db, User, Challenge, Solve, AuditLog
+from CTF_GAME import app, db, User, Challenge, Solve, AuditLog
 from werkzeug.security import generate_password_hash
 from cryptography.fernet import Fernet
 from datetime import datetime, timedelta

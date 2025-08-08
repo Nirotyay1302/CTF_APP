@@ -4,7 +4,7 @@ MySQL Database Seeding Script for CTF Application
 Populates the database with initial challenges and admin user
 """
 
-from app import app, db, User, Challenge, fernet
+from CTF_GAME import app, db, User, Challenge, fernet
 from werkzeug.security import generate_password_hash
 from datetime import datetime
 

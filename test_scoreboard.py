@@ -72,7 +72,7 @@ def test_scoreboard_data():
     print("\n📊 Testing scoreboard data structure...")
     
     try:
-        from app import app, db, User, Challenge, Solve
+        from CTF_GAME import app, db, User, Challenge, Solve
         
         with app.app_context():
             # Get all users

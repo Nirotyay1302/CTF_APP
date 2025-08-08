@@ -1,7 +1,7 @@
-from app import app, db
+from CTF_GAME import app, db
 import pandas as pd
 from datetime import datetime
-from app import User, Challenge, Submission, AuditLog
+from CTF_GAME import User, Challenge, Submission, AuditLog
 
 
 def _build_scoreboard_dataframe():
